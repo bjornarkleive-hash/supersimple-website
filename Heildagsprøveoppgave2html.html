@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <link rel="stylesheet" href="Heildagsprøveoppgave2.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<div id="hoved">
+    <h1>Registreringsskjema</h1>
+    
+    <form>
+        <div id ="registrering">
+            <label for="namn">Ditt Namn:</label>
+            <input type="text" id="namn" name="namn" placeholder="Skriv inn ditt namn" required>
+        
+
+        
+            <label for="epost">Din E-postadresse:</label>
+            <input type="email" id="epost" name="epost" placeholder="eksempel@adresse.noe" required>
+        
+
+        
+            <label for="dato">Når kjem dykk? Dato</label>
+            <input type="date" id="dato" name="dato" required>
+        </div>
+
+        
+        <div id="aktivitetar">
+        <p>Velg aktivitetar:</p>
+        <label>
+            <input type="checkbox" name="aktivitetar" value="alpinpass"> Dagpass i alpinannlegget (300kr for vaksne/150kr for barn)
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" name="aktivitetar" value="sportsshow"> Billett til sportsshow (200kr for vaksne/100kr for barn)
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" name="aktivitetar" value="skiquiz"> Skiquiz (100kr for vaksne/50 kr for barn)
+        </label>
+    </div>
+
+    <div id="middag">
+        <p>Vil dere ha middag? (200kr for vaksne/100kr for barn)</p>
+        <label>
+            <input type ="radio" name="middagvalg" value="ja" required>ja
+        </label>
+        <label>
+            <input type ="radio" name="middagvalg" value="nei" required>nei
+        </label>
+    </div>
+
+    <div id="Antallgjester">
+    <label for="voksne">Antall voksne </label>
+    <input type="number" id="voksne" min="1" value="0" max="4">
+
+    <label for ="barn">Antall barn</label>
+    <input type="number" id="barn" min="0" value="0" max="6">
+    </div>
+
+    <div id="sluttsum"></div>
+
+    <button type="submit">Send inn</button>
+    
+    <div id="kvittering" style="display:none; margin-top: 30px; padding: 20px; border: 2px solid #333; background-color: #f9f9f9;">
+        <h2>Registreringskvittering</h2>
+        <p><strong>Namn:</strong> <span id="kvit-namn"></span></p>
+        <p><strong>E-post:</strong> <span id="kvit-epost"></span></p>
+        <p><strong>Dato:</strong> <span id="kvit-dato"></span></p>
+         <p><strong>Aktivitet(ar):</strong> <span id="kvit-aktivitetar"></span></p>
+        <p><strong>Det er bestilt billettar til </strong> <span id="kvit-voksne"></span> voksne, og <span id="kvit-barn"></span> barn</p>
+        <p><strong>Middag:</strong> <span id="kvit-middag"></span></p>
+        <p style="font-size: 18px; font-weight: bold;"><strong>Sluttsum:</strong> <span id="kvit-sum"></span></p>
+    </div>
+
+
+
+    </form>
+
+    <script>
+    let namnEl = document.querySelector("#namn");
+    let epostEl = document.querySelector("#epost");
+    let datoEl = document.querySelector("#dato");
+    let voksneEl = document.querySelector("#voksne");
+    let barnEl = document.querySelector("#barn");
+    let sluttsumEl = document.querySelector("#sluttsum");
+    let middagvalg = document.querySelectorAll("input[name='middagvalg']");
+    let aktivitetar = document.querySelectorAll("input[name='aktivitetar']");
+    let form = document.querySelector("form");
+    let kvitteringEl = document.querySelector("#kvittering");
+
+    // Objekt for å lagre priser på aktivitetar, slik at det blir enklere å beregne totalprisen ( kan tekninsk sett gjøre det uten dette)
+
+    const aktivitetsPriser = {
+        "alpinpass": { voksne: 300, barn: 150 },
+        "sportsshow": { voksne: 200, barn: 100 },
+        "skiquiz": { voksne: 100, barn: 50 }
+    };
+
+    function beregnSluttsum() {
+        let voksne = Number(voksneEl.value);
+        let barn = Number(barnEl.value);
+        let erMiddag = Array.from(middagvalg).find(radio => radio.checked)?.value === "ja";
+        
+        let sum = 0;
+        
+        // Legg til middag i summen hvis middag er valgt
+        if (erMiddag) {
+            sum += (voksne * 200) + (barn * 100);
+        }
+        
+        
+        sum += voksne * 100 + barn * 50;
+        
+        
+        Array.from(aktivitetar).forEach(checkbox => {
+            if (checkbox.checked) {
+                let aktivitet = checkbox.value;
+                let pris = aktivitetsPriser[aktivitet];
+                sum += (voksne * pris.voksne) + (barn * pris.barn);
+            }
+        });
+        
+        sluttsumEl.innerHTML = "Sluttsum: " + sum + " kr";
+    }
+
+    voksneEl.addEventListener("input", beregnSluttsum);
+    barnEl.addEventListener("input", beregnSluttsum);
+    middagvalg.forEach(radio => radio.addEventListener("change", beregnSluttsum));
+    aktivitetar.forEach(checkbox => checkbox.addEventListener("change", beregnSluttsum));
+
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+        
+        // Hent inn alle verdier fra skjemaet
+        let namn = namnEl.value;
+        let epost = epostEl.value;
+        let dato = datoEl.value;
+        let voksne = voksneEl.value;
+        let barn = barnEl.value;
+        let erMiddag = Array.from(middagvalg).find(radio => radio.checked)?.value;
+        
+        let valgtAktivitetar = [];
+        Array.from(aktivitetar).forEach(checkbox => {
+            if (checkbox.checked) {
+                valgtAktivitetar.push(checkbox.parentElement.textContent.trim());
+            }
+        });
+        
+        let sum = 0;
+        if (erMiddag === "ja") {
+            sum += (Number(voksne) * 200) + (Number(barn) * 100);
+        }
+        //Her skjekker eg om det e meir enn 4 folk, og da gir 20 % rabatt
+        sum += Number(voksne) * 100 + Number(barn) * 50;
+        Array.from(aktivitetar).forEach(checkbox => {
+            if (checkbox.checked) {
+                let aktivitet = checkbox.value;
+                let pris = aktivitetsPriser[aktivitet];
+                if (Number(voksne) + Number(barn) >= 4) {
+                    sum += ((Number(voksne)*0.8) * pris.voksne) + (Number(barn) * pris.barn);
+                } else {
+                    sum += (Number(voksne) * pris.voksne) + (Number(barn) * pris.barn);
+                }
+            }
+        });
+        
+        document.querySelector("#kvit-namn").textContent = namn;
+        document.querySelector("#kvit-epost").textContent = epost;
+        document.querySelector("#kvit-dato").textContent = dato;
+        document.querySelector("#kvit-voksne").textContent = voksne;
+        document.querySelector("#kvit-barn").textContent = barn;
+        document.querySelector("#kvit-middag").textContent = erMiddag === "ja" ? "Ja" : "Nei";
+        document.querySelector("#kvit-aktivitetar").textContent = valgtAktivitetar.length > 0 ? valgtAktivitetar.join(", ") : "Ingen";
+        if (Number(voksne) + Number(barn) >= 4) {
+            sum *= 0.8; // Gi 20% rabatt her i dette tilfellet
+            document.querySelector("#kvit-sum").textContent = sum + " kr" + "(inkludert 20% rabatt for grupper over 4 personer)";
+        }
+        else {
+            document.querySelector("#kvit-sum").textContent = sum + " kr";
+        }
+        
+        
+        kvitteringEl.style.display = "block";
+    });
+
+    </script>
+
+</body>
