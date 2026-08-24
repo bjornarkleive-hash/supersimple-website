@@ -1,13 +1,273 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bjørnar Kleive — Personlig nettside</title>
   <link rel="stylesheet" href="Heildagsprøveoppgave2.css">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Minimal fallback styles if external CSS is missing */
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 0; background: #f7f9fb; color: #0b1220; }
+    header { background: linear-gradient(90deg,#0f1724,#111827); color: white; padding: 48px 16px; text-align: center; }
+    main { max-width: 960px; margin: 24px auto; padding: 16px; }
+    .hero { display:flex; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap }
+    .avatar { width:120px; height:120px; border-radius:12px; background:linear-gradient(135deg,#60a5fa,#7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:40px }
+    .card { background:white; border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(11,18,32,0.06); }
+    .specs { width:100%; border-collapse:collapse; }
+    .specs td { padding:8px; border-bottom:1px solid #eef2f7; }
+    .specs td.label { color:#6b7280; width:40%; font-weight:600 }
+    footer { text-align:center; color:#6b7280; padding:24px 8px }
+    .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px }
+    button { background:#111827; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer }
+    @media (max-width:640px){ .hero{flex-direction:column;} .specs td.label{width:50%} }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>Bjørnar Kleive</h1>
+    <p style="opacity:0.9; margin-top:6px">Utvikler og problemløser — velkommen til min enkle nettside</p>
+  </header>
 
-    <script>
-    </script>
+  <main>
+    <section class="hero card">
+      <div class="avatar" aria-hidden="true">BK</div>
+      <div style="min-width:220px;">
+        <h2 style="margin:0">Hei — jeg er Bjørnar</h2>
+        <p style="margin:6px 0 0 0; color:#374151">Her finner du litt om meg og hvilken maskin du besøker fra — siden leser innsikt fra nettleseren for å vise maskin-spesifikasjoner.</p>
+      </div>
+    </section>
 
+    <section class="card" style="margin-top:16px">
+      <h3>Om meg</h3>
+      <p>Jeg er interessert i webutvikling, tilgjengelighet og enkle, robuste løsninger. Dette er en enkel presentasjonsside og et eksempel på hvordan man kan lese maskin-spesifikasjoner fra en besøkende enhet (med brukerens tillatelse for enkelte funksjoner).</p>
+      <ul>
+        <li>Jobber med: Web, JavaScript, tilgjengelighet</li>
+        <li>Interesser: UI/UX, systemdesign, læring</li>
+      </ul>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="specs-card">
+      <h3>Din datamaskins spesifikasjoner</h3>
+      <p style="margin-top:0.25rem; color:#6b7280">Informasjonen nedenfor samles fra nettleseren din — ingen data sendes automatisk til en server. Du kan kopiere eller laste ned rapporten.</p>
+
+      <table class="specs" id="specs-table" aria-live="polite">
+        <!-- Rows injected by JavaScript -->
+      </table>
+
+      <div class="actions">
+        <button id="copy-btn">Kopier som tekst</button>
+        <button id="download-btn">Last ned JSON</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3>Personvern</h3>
+      <p style="margin:0">Denne siden bruker kun lokale nettleser-APIer for å lese ikke-identifiserende systemdata (skjermstørrelse, nettleser, tidssone, CPU- og minneindekser). Ingen data sendes videre uten at du eksplisitt klikker en knapp som gjør det.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <small>© Bjørnar Kleive</small>
+  </footer>
+
+  <script>
+    async function getSpecs() {
+      const nav = navigator;
+      const screenInfo = window.screen || {};
+
+      const specs = {
+        timestamp: new Date().toISOString(),
+        userAgent: nav.userAgent || null,
+        platform: nav.platform || null,
+        vendor: nav.vendor || null,
+        language: nav.language || null,
+        languages: nav.languages || null,
+        cookieEnabled: nav.cookieEnabled === undefined ? null : nav.cookieEnabled,
+        hardwareConcurrency: nav.hardwareConcurrency || null,
+        deviceMemory: nav.deviceMemory || null,
+        doNotTrack: nav.doNotTrack || null,
+        devicePixelRatio: window.devicePixelRatio || null,
+        screen: {
+          width: screenInfo.width || null,
+          height: screenInfo.height || null,
+          availWidth: screenInfo.availWidth || null,
+          availHeight: screenInfo.availHeight || null,
+          colorDepth: screenInfo.colorDepth || null,
+        },
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+        connection: null,
+        battery: null,
+        location: null
+      };
+
+      // Network connection (may not be available in all browsers)
+      try {
+        const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+        if (conn) {
+          specs.connection = {
+            effectiveType: conn.effectiveType || null,
+            downlink: conn.downlink || null,
+            rtt: conn.rtt || null,
+            saveData: conn.saveData || null
+          };
+        }
+      } catch (e) { /* ignore */ }
+
+      // Battery (optional, permission may be required or unsupported)
+      try {
+        if (navigator.getBattery) {
+          const bat = await navigator.getBattery();
+          specs.battery = {
+            charging: bat.charging,
+            level: bat.level,
+            chargingTime: bat.chargingTime,
+            dischargingTime: bat.dischargingTime
+          };
+        }
+      } catch (e) { /* ignore */ }
+
+      // Geolocation (only if user allows)
+      try {
+        if (navigator.geolocation) {
+          const pos = await new Promise((resolve, reject) => {
+            const id = navigator.geolocation.getCurrentPosition(resolve, reject, {timeout:5000});
+          }).catch(() => null);
+          if (pos && pos.coords) {
+            specs.location = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            };
+          }
+        }
+      } catch (e) { /* ignore */ }
+
+      return specs;
+    }
+
+    function osFromUA(ua) {
+      ua = (ua || '').toLowerCase();
+      if (ua.indexOf('windows') !== -1) return 'Windows';
+      if (ua.indexOf('mac os x') !== -1 || ua.indexOf('macintosh') !== -1) return 'macOS';
+      if (ua.indexOf('android') !== -1) return 'Android';
+      if (ua.indexOf('iphone') !== -1 || ua.indexOf('ipad') !== -1 || ua.indexOf('ios') !== -1) return 'iOS';
+      if (ua.indexOf('linux') !== -1) return 'Linux';
+      return 'Ukjent';
+    }
+
+    function renderSpecs(specs) {
+      const table = document.getElementById('specs-table');
+      table.innerHTML = '';
+
+      const rows = [
+        ['Tid (lokal ISO)', specs.timestamp],
+        ['Nettleser UA', specs.userAgent],
+        ['Operativsystem (estimat)', osFromUA(specs.userAgent)],
+        ['Plattform', specs.platform],
+        ['Produsent', specs.vendor],
+        ['Språk', specs.language],
+        ['Støttede språk', Array.isArray(specs.languages) ? specs.languages.join(', ') : specs.languages],
+        ['Skjerm (px)', specs.screen.width && specs.screen.height ? specs.screen.width + ' × ' + specs.screen.height : null],
+        ['Skjerm fargedybde', specs.screen.colorDepth],
+        ['Skjerm pixel ratio', specs.devicePixelRatio],
+        ['CPU (logiske kjerner)', specs.hardwareConcurrency],
+        ['Est. RAM (GB)', specs.deviceMemory],
+        ['Tidsone', specs.timezone],
+        ['Cookies aktivert', specs.cookieEnabled],
+        ['Do Not Track', specs.doNotTrack]
+      ];
+
+      if (specs.connection) {
+        rows.push(['Nettverkstype', specs.connection.effectiveType]);
+        rows.push(['Nedlast (Mbps)', specs.connection.downlink]);
+        rows.push(['RTT (ms)', specs.connection.rtt]);
+      }
+      if (specs.battery) {
+        rows.push(['Batteri - lading', specs.battery.charging]);
+        rows.push(['Batteri nivå', specs.battery.level]);
+      }
+      if (specs.location) {
+        rows.push(['Posisjon (lat,lon)', specs.location.latitude + ', ' + specs.location.longitude]);
+        rows.push(['Posisjon nøyaktighet (m)', specs.location.accuracy]);
+      }
+
+      for (const [label, value] of rows) {
+        const tr = document.createElement('tr');
+        const tdLabel = document.createElement('td');
+        tdLabel.className = 'label';
+        tdLabel.textContent = label;
+        const tdVal = document.createElement('td');
+        tdVal.textContent = value === null || value === undefined ? 'Ikke tilgjengelig' : String(value);
+        tr.appendChild(tdLabel);
+        tr.appendChild(tdVal);
+        table.appendChild(tr);
+      }
+
+      // store last specs for copy/download
+      window.__lastSpecs = specs;
+    }
+
+    function specsToText(specs) {
+      const lines = [];
+      lines.push('Bjørnar Kleive — Besøkendes maskinrapport');
+      lines.push('Tid: ' + specs.timestamp);
+      lines.push('UA: ' + (specs.userAgent || ''));
+      lines.push('OS (estimat): ' + osFromUA(specs.userAgent));
+      lines.push('Plattform: ' + (specs.platform || ''));
+      lines.push('Språk: ' + (specs.language || ''));
+      lines.push('Skjerm: ' + ((specs.screen && specs.screen.width && specs.screen.height) ? (specs.screen.width + 'x' + specs.screen.height) : ''));
+      lines.push('CPU kjerner: ' + (specs.hardwareConcurrency || ''));
+      lines.push('Est. RAM (GB): ' + (specs.deviceMemory || ''));
+      lines.push('Tidsone: ' + (specs.timezone || ''));
+      if (specs.connection) {
+        lines.push('Nettverkstype: ' + (specs.connection.effectiveType || ''));
+        lines.push('Nedlast (Mbps): ' + (specs.connection.downlink || ''));
+      }
+      if (specs.location) {
+        lines.push('Posisjon: ' + specs.location.latitude + ',' + specs.location.longitude + ' (nøyaktighet ' + specs.location.accuracy + ' m)');
+      }
+      return lines.join('\n');
+    }
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const specs = window.__lastSpecs;
+      if (!specs) return alert('Spesifikasjoner ikke klare ennå.');
+      const text = specsToText(specs);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Rapport kopiert til utklippstavlen');
+        }).catch(() => { alert('Kunne ikke kopiere'); });
+      } else {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); alert('Rapport kopiert til utklippstavlen'); } catch (e) { alert('Kunne ikke kopiere'); }
+        ta.remove();
+      }
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const specs = window.__lastSpecs;
+      if (!specs) return alert('Spesifikasjoner ikke klare ennå.');
+      const blob = new Blob([JSON.stringify(specs, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'maskin-rapport.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // On load, gather specs and render
+    (async () => {
+      const specs = await getSpecs();
+      renderSpecs(specs);
+    })();
+  </script>
 </body>
+</html>
