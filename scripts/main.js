@@ -17,6 +17,8 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const messagesCol = collection(db, "messages");
 const specsCol = collection(db, "shared_specs");
+const deleteSpecsBtn = document.getElementById('delete-specs-btn');
+
 
 /* Specs-funksjonalitet */
 async function getSpecs() {
