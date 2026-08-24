@@ -253,10 +253,60 @@ function setupEventListeners() {
   }
 }
 
-/* On load, gather specs and render */
-document.addEventListener('DOMContentLoaded', async () => {
-  const specs = await getSpecs();
-  renderSpecs(specs);
-  renderMessages();
-  setupEventListeners();
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Erstatt disse med verdiene fra din Firebase-konsoll:
+const firebaseConfig = {
+  apiKey: "DIN_API_KEY",
+  authDomain: "supersimplewebsite-20fe9.firebaseapp.com",
+  projectId: "supersimplewebsite-20fe9",
+  storageBucket: "supersimplewebsite-20fe9.appspot.com",
+  messagingSenderId: "332243396525",
+  appId: "DIN_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const messagesCol = collection(db, "messages");
+
+// Lytt til meldinger i skyen i sanntid
+const q = query(messagesCol, orderBy("timestamp", "asc"));
+onSnapshot(q, (snapshot) => {
+  const container = document.getElementById('messages-list');
+  if (!container) return;
+  
+  const messages = [];
+  snapshot.forEach(doc => messages.push(doc.data()));
+
+  if (messages.length === 0) {
+    container.innerHTML = '<div style="padding:16px; text-align:center; color:#9ca3af;">Ingen meldinger ennå. Vær første!</div>';
+    return;
+  }
+
+  container.innerHTML = messages.map(msg => `
+    <div class="message-item">
+      <div class="message-meta">${new Date(msg.timestamp).toLocaleString('no-NO')}</div>
+      <div class="message-text">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    </div>
+  `).join('');
 });
+
+// Event listener for å sende ny melding til Firestore
+document.getElementById('send-btn')?.addEventListener('click', async () => {
+  const inputEl = document.getElementById('message-input');
+  const text = inputEl?.value.trim();
+  if (!text) return alert('Vennligst skriv en melding');
+
+  try {
+    await addDoc(messagesCol, {
+      text: text,
+      timestamp: new Date().toISOString()
+    });
+    inputEl.value = '';
+  } catch (error) {
+    console.error("Feil ved sending til Firestore:", error);
+  }
+});
+
+
