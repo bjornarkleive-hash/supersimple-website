@@ -1,7 +1,26 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Din ekte Firebase-konfigurasjon
+const firebaseConfig = {
+  apiKey: "AIzaSyDw5W3AUpuoJ9ys-bGVfSo8-j_5Mn5wm5g",
+  authDomain: "supersimplewebsite-20fe9.firebaseapp.com",
+  databaseURL: "https://supersimplewebsite-20fe9-default-rtdb.firebaseio.com",
+  projectId: "supersimplewebsite-20fe9",
+  storageBucket: "supersimplewebsite-20fe9.firebasestorage.app",
+  messagingSenderId: "332243396525",
+  appId: "1:332243396525:web:da28ba426b4e7191aea324",
+  measurementId: "G-6XGQY7KMWS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const messagesCol = collection(db, "messages");
+
+/* Specs-funksjonalitet */
 async function getSpecs() {
   const nav = navigator;
   const screenInfo = window.screen || {};
-
   const specs = {
     timestamp: new Date().toISOString(),
     userAgent: nav.userAgent || null,
@@ -17,55 +36,9 @@ async function getSpecs() {
     screen: {
       width: screenInfo.width || null,
       height: screenInfo.height || null,
-      availWidth: screenInfo.availWidth || null,
-      availHeight: screenInfo.availHeight || null,
-      colorDepth: screenInfo.colorDepth || null,
     },
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
-    connection: null,
-    battery: null,
-    location: null
   };
-
-  try {
-    const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
-    if (conn) {
-      specs.connection = {
-        effectiveType: conn.effectiveType || null,
-        downlink: conn.downlink || null,
-        rtt: conn.rtt || null,
-        saveData: conn.saveData || null
-      };
-    }
-  } catch (e) { /* ignore */ }
-
-  try {
-    if (navigator.getBattery) {
-      const bat = await navigator.getBattery();
-      specs.battery = {
-        charging: bat.charging,
-        level: bat.level,
-        chargingTime: bat.chargingTime,
-        dischargingTime: bat.dischargingTime
-      };
-    }
-  } catch (e) { /* ignore */ }
-
-  try {
-    if (navigator.geolocation) {
-      const pos = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-      }).catch(() => null);
-      if (pos && pos.coords) {
-        specs.location = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        };
-      }
-    }
-  } catch (e) { /* ignore */ }
-
   return specs;
 }
 
@@ -89,32 +62,12 @@ function renderSpecs(specs) {
     ['Nettleser UA', specs.userAgent],
     ['Operativsystem (estimat)', osFromUA(specs.userAgent)],
     ['Plattform', specs.platform],
-    ['Produsent', specs.vendor],
     ['Språk', specs.language],
-    ['Støttede språk', Array.isArray(specs.languages) ? specs.languages.join(', ') : specs.languages],
     ['Skjerm (px)', specs.screen.width && specs.screen.height ? specs.screen.width + ' × ' + specs.screen.height : null],
-    ['Skjerm fargedybde', specs.screen.colorDepth],
-    ['Skjerm pixel ratio', specs.devicePixelRatio],
-    ['CPU (logiske kjerner)', specs.hardwareConcurrency],
+    ['CPU (kjerner)', specs.hardwareConcurrency],
     ['Est. RAM (GB)', specs.deviceMemory],
-    ['Tidsone', specs.timezone],
-    ['Cookies aktivert', specs.cookieEnabled],
-    ['Do Not Track', specs.doNotTrack]
+    ['Tidsone', specs.timezone]
   ];
-
-  if (specs.connection) {
-    rows.push(['Nettverkstype', specs.connection.effectiveType]);
-    rows.push(['Nedlast (Mbps)', specs.connection.downlink]);
-    rows.push(['RTT (ms)', specs.connection.rtt]);
-  }
-  if (specs.battery) {
-    rows.push(['Batteri - lading', specs.battery.charging]);
-    rows.push(['Batteri nivå', specs.battery.level]);
-  }
-  if (specs.location) {
-    rows.push(['Posisjon (lat,lon)', specs.location.latitude + ', ' + specs.location.longitude]);
-    rows.push(['Posisjon nøyaktighet (m)', specs.location.accuracy]);
-  }
 
   for (const [label, value] of rows) {
     const tr = document.createElement('tr');
@@ -127,46 +80,19 @@ function renderSpecs(specs) {
     tr.appendChild(tdVal);
     table.appendChild(tr);
   }
-
   window.__lastSpecs = specs;
 }
 
-function specsToText(specs) {
-  const lines = [];
-  lines.push('Bjørnar Kleive — Besøkendes maskinrapport');
-  lines.push('Tid: ' + specs.timestamp);
-  lines.push('UA: ' + (specs.userAgent || ''));
-  lines.push('OS (estimat): ' + osFromUA(specs.userAgent));
-  lines.push('Plattform: ' + (specs.platform || ''));
-  lines.push('Språk: ' + (specs.language || ''));
-  lines.push('Skjerm: ' + ((specs.screen && specs.screen.width && specs.screen.height) ? (specs.screen.width + 'x' + specs.screen.height) : ''));
-  lines.push('CPU kjerner: ' + (specs.hardwareConcurrency || ''));
-  lines.push('Est. RAM (GB): ' + (specs.deviceMemory || ''));
-  lines.push('Tidsone: ' + (specs.timezone || ''));
-  if (specs.connection) {
-    lines.push('Nettverkstype: ' + (specs.connection.effectiveType || ''));
-    lines.push('Nedlast (Mbps): ' + (specs.connection.downlink || ''));
-  }
-  if (specs.location) {
-    lines.push('Posisjon: ' + specs.location.latitude + ',' + specs.location.longitude + ' (nøyaktighet ' + specs.location.accuracy + ' m)');
-  }
-  return lines.join('\n');
-}
-
-/* Messages functionality */
-function loadMessages() {
-  const stored = localStorage.getItem('messages');
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveMessages(messages) {
-  localStorage.setItem('messages', JSON.stringify(messages));
-}
-
-function renderMessages() {
+/* Sanntids chat-lytter fra Firestore */
+const q = query(messagesCol, orderBy("timestamp", "asc"));
+onSnapshot(q, (snapshot) => {
   const container = document.getElementById('messages-list');
   if (!container) return;
-  const messages = loadMessages();
+  
+  const messages = [];
+  snapshot.forEach(doc => {
+    messages.push({ id: doc.id, ...doc.data() });
+  });
 
   if (messages.length === 0) {
     container.innerHTML = '<div style="padding:16px; text-align:center; color:#9ca3af;">Ingen meldinger ennå. Vær første!</div>';
@@ -179,27 +105,32 @@ function renderMessages() {
       <div class="message-text">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
     </div>
   `).join('');
-}
+});
 
-function setupEventListeners() {
+/* Event Listeners */
+document.addEventListener('DOMContentLoaded', async () => {
+  const specs = await getSpecs();
+  renderSpecs(specs);
+
   const sendBtn = document.getElementById('send-btn');
   const inputEl = document.getElementById('message-input');
   const clearBtn = document.getElementById('clear-btn');
-  const copyBtn = document.getElementById('copy-btn');
-  const downloadBtn = document.getElementById('download-btn');
 
+  // Send melding til Firestore
   if (sendBtn && inputEl) {
-    sendBtn.addEventListener('click', () => {
+    sendBtn.addEventListener('click', async () => {
       const text = inputEl.value.trim();
-      if (!text) {
-        alert('Vennligst skriv en melding');
-        return;
+      if (!text) return alert('Vennligst skriv en melding');
+
+      try {
+        await addDoc(messagesCol, {
+          text: text,
+          timestamp: new Date().toISOString()
+        });
+        inputEl.value = '';
+      } catch (error) {
+        console.error("Feil ved sending til Firestore:", error);
       }
-      const messages = loadMessages();
-      messages.push({ text: text, timestamp: new Date().toISOString() });
-      saveMessages(messages);
-      inputEl.value = '';
-      renderMessages();
     });
 
     inputEl.addEventListener('keypress', (e) => {
@@ -207,117 +138,15 @@ function setupEventListeners() {
     });
   }
 
+  // Slett alle meldinger (fjerner alt globalt fra Firestore)
   if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Er du sikker på at du vil slette alle meldinger?')) {
-        localStorage.removeItem('messages');
-        renderMessages();
+    clearBtn.addEventListener('click', async () => {
+      if (confirm('Er du sikker på at du vil slette ALLE meldinger fra hele databasen?')) {
+        const querySnapshot = await getDocs(messagesCol);
+        querySnapshot.forEach(async (documentDoc) => {
+          await deleteDoc(doc(db, "messages", documentDoc.id));
+        });
       }
     });
   }
-
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const specs = window.__lastSpecs;
-      if (!specs) return alert('Spesifikasjoner ikke klare ennå.');
-      const text = specsToText(specs);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          alert('Rapport kopiert til utklippstavlen');
-        }).catch(() => { alert('Kunne ikke kopiere'); });
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); alert('Rapport kopiert til utklippstavlen'); } catch (e) { alert('Kunne ikke kopiere'); }
-        ta.remove();
-      }
-    });
-  }
-
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-      const specs = window.__lastSpecs;
-      if (!specs) return alert('Spesifikasjoner ikke klare ennå.');
-      const blob = new Blob([JSON.stringify(specs, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'maskin-rapport.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    });
-  }
-}
-
- const firebaseConfig = {
-    apiKey: "AIzaSyDw5W3AUpuoJ9ys-bGVfSo8-j_5Mn5wm5g",
-    authDomain: "supersimplewebsite-20fe9.firebaseapp.com",
-    databaseURL: "https://supersimplewebsite-20fe9-default-rtdb.firebaseio.com",
-    projectId: "supersimplewebsite-20fe9",
-    storageBucket: "supersimplewebsite-20fe9.firebasestorage.app",
-    messagingSenderId: "332243396525",
-    appId: "1:332243396525:web:da28ba426b4e7191aea324",
-    measurementId: "G-6XGQY7KMWS"
-  };
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// Erstatt disse med verdiene fra din Firebase-konsoll:
-const firebaseConfig = {
-  apiKey: "DIN_API_KEY",
-  authDomain: "supersimplewebsite-20fe9.firebaseapp.com",
-  projectId: "supersimplewebsite-20fe9",
-  storageBucket: "supersimplewebsite-20fe9.appspot.com",
-  messagingSenderId: "332243396525",
-  appId: "DIN_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const messagesCol = collection(db, "messages");
-
-// Lytt til meldinger i skyen i sanntid
-const q = query(messagesCol, orderBy("timestamp", "asc"));
-onSnapshot(q, (snapshot) => {
-  const container = document.getElementById('messages-list');
-  if (!container) return;
-  
-  const messages = [];
-  snapshot.forEach(doc => messages.push(doc.data()));
-
-  if (messages.length === 0) {
-    container.innerHTML = '<div style="padding:16px; text-align:center; color:#9ca3af;">Ingen meldinger ennå. Vær første!</div>';
-    return;
-  }
-
-  container.innerHTML = messages.map(msg => `
-    <div class="message-item">
-      <div class="message-meta">${new Date(msg.timestamp).toLocaleString('no-NO')}</div>
-      <div class="message-text">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-    </div>
-  `).join('');
 });
-
-// Event listener for å sende ny melding til Firestore
-document.getElementById('send-btn')?.addEventListener('click', async () => {
-  const inputEl = document.getElementById('message-input');
-  const text = inputEl?.value.trim();
-  if (!text) return alert('Vennligst skriv en melding');
-
-  try {
-    await addDoc(messagesCol, {
-      text: text,
-      timestamp: new Date().toISOString()
-    });
-    inputEl.value = '';
-  } catch (error) {
-    console.error("Feil ved sending til Firestore:", error);
-  }
-});
-
-
