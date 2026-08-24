@@ -253,6 +253,17 @@ function setupEventListeners() {
   }
 }
 
+ const firebaseConfig = {
+    apiKey: "AIzaSyDw5W3AUpuoJ9ys-bGVfSo8-j_5Mn5wm5g",
+    authDomain: "supersimplewebsite-20fe9.firebaseapp.com",
+    databaseURL: "https://supersimplewebsite-20fe9-default-rtdb.firebaseio.com",
+    projectId: "supersimplewebsite-20fe9",
+    storageBucket: "supersimplewebsite-20fe9.firebasestorage.app",
+    messagingSenderId: "332243396525",
+    appId: "1:332243396525:web:da28ba426b4e7191aea324",
+    measurementId: "G-6XGQY7KMWS"
+  };
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
