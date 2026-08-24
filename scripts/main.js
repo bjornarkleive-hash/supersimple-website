@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, setDoc, doc, query, orderBy, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Din ekte Firebase-konfigurasjon
 const firebaseConfig = {
@@ -144,14 +144,19 @@ onSnapshot(specsQuery, (snapshot) => {
 
 /* Event Listeners */
 document.addEventListener('DOMContentLoaded', async () => {
-  const specs = await getSpecs();
-  renderSpecs(specs);
+  // currentSpecs holder gjeldande specs på sida
+  let currentSpecs = await getSpecs();
+  renderSpecs(currentSpecs);
 
   const sendBtn = document.getElementById('send-btn');
   const inputEl = document.getElementById('message-input');
   const nameEl = document.getElementById('name-input');
   const clearBtn = document.getElementById('clear-btn');
   const shareSpecsBtn = document.getElementById('share-specs-btn');
+
+  // Stat for publisering: dersom brukaren har publisert, lagre doc-id og namn
+  let publishedDocId = null;
+  let publishedName = null;
 
   // Send melding til Firestore (med namn)
   if (sendBtn && inputEl) {
@@ -179,21 +184,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Del dine specs
+  // Hjelpefunksjon: lag ei trygg dokument-ID frå namn
+  function makeIdFromName(name) {
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '');
+    return slug ? `spec-${slug}` : `spec-${Date.now()}`;
+  }
+
+  // Del/publiser dine specs (krever namn). Vi bruker setDoc for å kunne oppdatere seinare.
   if (shareSpecsBtn) {
     shareSpecsBtn.addEventListener('click', async () => {
       const name = prompt('Kva skal dine specs heite? (f.eks. "Min MacBook")');
-      if (!name) return;
+      if (!name) return alert('Publisering avbrote: du må oppgi eit namn');
+
+      const docId = makeIdFromName(name);
 
       try {
-        await addDoc(specsCol, {
+        await setDoc(doc(db, 'shared_specs', docId), {
           name: name.trim(),
-          specs: specs,
+          specs: currentSpecs,
           timestamp: new Date().toISOString()
         });
-        alert('Specs delt! 🎉');
+        publishedDocId = docId;
+        publishedName = name.trim();
+        alert('Specs publisert! 🎉\nDøme: oppdateringar av specs vil automatisk oppdatere denne publiserte posten.');
+        // Oppdater knappetekst for å indikere at vi har publisert
+        shareSpecsBtn.textContent = `Oppdater publisert: ${publishedName}`;
       } catch (error) {
-        console.error("Feil ved deling av specs:", error);
+        console.error("Feil ved publisering av specs:", error);
+        alert('Kunne ikkje publisere specs. Sjekk konsollen for feil.');
       }
     });
   }
@@ -209,4 +227,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  // Polling av specs for å oppdage endringar. Dersom brukaren har publisert, oppdaterer vi dokumentet automatisk.
+  setInterval(async () => {
+    try {
+      const newSpecs = await getSpecs();
+      // enkel djup samanlikning via stringify (tilstrekkeleg for dette use-caset)
+      if (JSON.stringify(newSpecs) !== JSON.stringify(currentSpecs)) {
+        currentSpecs = newSpecs;
+        renderSpecs(currentSpecs);
+
+        if (publishedDocId) {
+          try {
+            await setDoc(doc(db, 'shared_specs', publishedDocId), {
+              name: publishedName,
+              specs: currentSpecs,
+              timestamp: new Date().toISOString()
+            });
+            console.log('Publisert specs oppdatert for', publishedName);
+          } catch (err) {
+            console.error('Kunne ikkje oppdatere publiserte specs:', err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Feil ved henting av oppdaterte specs:', err);
+    }
+  }, 10000); // sjekk kvar 10. sekund
 });
