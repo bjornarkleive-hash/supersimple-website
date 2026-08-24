@@ -1,17 +1,295 @@
-body{
-    background-color: #f0f0f0aa;
-    font-family: Georgia, "Times New Roman", Times, serif;
+/* === GLOBAL STYLES === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-#hoved{
-    width: 60%;
-    margin: 50px auto;
-    padding: 40px;
-    background-color: white;
-    border: 1px solid #cccccc;
+body {
+  background-color: #f7f9fb;
+  color: #0b1220;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
 }
-label{
-    display: block;
-    margin-bottom: 5px;
 
+/* === HEADER === */
+header {
+  background: linear-gradient(90deg, #0f1724, #111827);
+  color: white;
+  padding: 48px 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+header p {
+  opacity: 0.9;
+  font-size: 1rem;
+  margin-top: 6px;
+}
+
+/* === MAIN CONTAINER === */
+main {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 16px;
+}
+
+/* === CARD COMPONENT === */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(11, 18, 32, 0.08);
+  margin-bottom: 24px;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(11, 18, 32, 0.12);
+}
+
+.card h2,
+.card h3 {
+  color: #0f1724;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.card p {
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+/* === HERO SECTION (INFO OM BJØRNAR) === */
+.hero {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.avatar {
+  width: 140px;
+  height: 140px;
+  min-width: 140px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #60a5fa, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 2rem;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+.hero > div:last-child {
+  min-width: 280px;
+}
+
+.hero h2 {
+  margin: 0 0 12px 0;
+  font-size: 2rem;
+}
+
+.hero p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* === ABOUT SECTION === */
+.card ul {
+  list-style-position: inside;
+  color: #374151;
+}
+
+.card ul li {
+  margin-bottom: 8px;
+}
+
+/* === SPECS TABLE (MASKINSPESIFIKASJONER) === */
+#specs-card {
+  margin-top: 24px;
+}
+
+#specs-card > p:first-of-type {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.specs {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.specs tr {
+  border-bottom: 1px solid #eef2f7;
+}
+
+.specs tr:last-child {
+  border-bottom: none;
+}
+
+.specs td {
+  padding: 12px 0;
+  vertical-align: top;
+}
+
+.specs td.label {
+  color: #6b7280;
+  font-weight: 600;
+  width: 35%;
+  padding-right: 16px;
+}
+
+.specs td:last-child {
+  color: #0b1220;
+  word-break: break-word;
+}
+
+/* === ACTIONS (BUTTONS) === */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background: #1f2937;
+}
+
+button:active {
+  background: #0f1724;
+  transform: scale(0.98);
+}
+
+/* === PRIVACY SECTION === */
+.card:last-of-type {
+  background-color: #f9fafb;
+  border-left: 4px solid #60a5fa;
+}
+
+/* === FOOTER === */
+footer {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 8px;
+  font-size: 0.9rem;
+  border-top: 1px solid #eef2f7;
+  margin-top: 32px;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 2rem;
+  }
+
+  main {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .hero {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .hero > div:last-child {
+    min-width: 100%;
+    text-align: center;
+  }
+
+  .hero h2 {
+    font-size: 1.5rem;
+  }
+
+  .avatar {
+    width: 120px;
+    height: 120px;
+    font-size: 1.5rem;
+  }
+
+  .specs td.label {
+    width: 45%;
+  }
+
+  .actions {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    padding: 32px 12px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  header p {
+    font-size: 0.9rem;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card h2,
+  .card h3 {
+    font-size: 1.2rem;
+  }
+
+  .specs td {
+    padding: 10px 0;
+    font-size: 0.9rem;
+  }
+
+  .specs td.label {
+    width: 50%;
+    font-weight: 600;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
 }
