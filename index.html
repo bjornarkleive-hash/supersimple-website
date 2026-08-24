@@ -41,6 +41,15 @@
       <div class="actions">
         <button id="copy-btn">Kopier som tekst</button>
         <button id="download-btn">Last ned JSON</button>
+        <button id="share-specs-btn">Del dine specs</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3>Delte spesifikasjoner</h3>
+      <p>Her er alle specs som andre har delt:</p>
+      <div class="shared-specs" id="shared-specs-list">
+        <!-- Shared specs injected by JavaScript -->
       </div>
     </section>
 
@@ -51,9 +60,14 @@
 
     <section class="card" style="margin-top:16px">
       <h3>Skriv en melding</h3>
-      <p style="margin-top:0.25rem; color:#6b7280">Hei besøkende! Du kan skrive en kort melding her. Meldingene lagres lokalt i nettleseren din — kun du kan se dem.</p>
+      <p style="margin-top:0.25rem; color:#6b7280">Hei besøkande! Du kan skrive ein kort melding her. Meldingane lagrest lokalt i nettlesaren din — berre du kan sjå dei.</p>
       
-      <textarea id="message-input" placeholder="Skriv din melding her..."></textarea>
+      <div style="margin-bottom:16px;">
+        <label for="name-input" style="display:block; margin-bottom:6px; font-weight:500;">Ditt namn:</label>
+        <input id="name-input" type="text" placeholder="Skriv ditt namn her..." style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:4px; font-size:1rem;">
+      </div>
+      
+      <textarea id="message-input" placeholder="Skriv di melding her..."></textarea>
       
       <div class="actions">
         <button id="send-btn">Send melding</button>
@@ -63,7 +77,7 @@
         <!-- Messages injected by JavaScript -->
       </div>
 
-      <button class="clear-btn" id="clear-btn">Slett alle meldinger</button>
+      <button class="clear-btn" id="clear-btn">Slett alle meldingar</button>
     </section>
 
   </main>
