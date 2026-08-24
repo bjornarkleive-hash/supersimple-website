@@ -16,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const messagesCol = collection(db, "messages");
+const specsCol = collection(db, "shared_specs");
 
 /* Specs-funksjonalitet */
 async function getSpecs() {
@@ -83,6 +84,30 @@ function renderSpecs(specs) {
   window.__lastSpecs = specs;
 }
 
+function renderSharedSpecs(sharedSpecs) {
+  const container = document.getElementById('shared-specs-list');
+  if (!container) return;
+
+  if (sharedSpecs.length === 0) {
+    container.innerHTML = '<div style="padding:16px; text-align:center; color:#9ca3af;">Ingen delte specs ennå.</div>';
+    return;
+  }
+
+  container.innerHTML = sharedSpecs.map(spec => `
+    <div style="border:1px solid #e5e7eb; border-radius:6px; padding:12px; margin-bottom:12px; background:#f9fafb;">
+      <div style="font-weight:600; margin-bottom:8px;">📊 ${spec.name}</div>
+      <table style="width:100%; font-size:0.875rem;">
+        <tr><td style="color:#6b7280;">OS:</td><td style="font-weight:500;">${osFromUA(spec.specs.userAgent)}</td></tr>
+        <tr><td style="color:#6b7280;">Skjerm:</td><td style="font-weight:500;">${spec.specs.screen.width} × ${spec.specs.screen.height} px</td></tr>
+        <tr><td style="color:#6b7280;">CPU:</td><td style="font-weight:500;">${spec.specs.hardwareConcurrency || 'Ukjent'} kjerner</td></tr>
+        <tr><td style="color:#6b7280;">RAM:</td><td style="font-weight:500;">${spec.specs.deviceMemory || 'Ukjent'} GB</td></tr>
+        <tr><td style="color:#6b7280;">Tidssone:</td><td style="font-weight:500;">${spec.specs.timezone}</td></tr>
+        <tr><td style="color:#6b7280;">Tid:</td><td style="font-weight:500; font-size:0.8rem;">${new Date(spec.timestamp).toLocaleString('no-NO')}</td></tr>
+      </table>
+    </div>
+  `).join('');
+}
+
 /* Sanntids chat-lytter fra Firestore */
 const q = query(messagesCol, orderBy("timestamp", "asc"));
 onSnapshot(q, (snapshot) => {
@@ -101,10 +126,20 @@ onSnapshot(q, (snapshot) => {
 
   container.innerHTML = messages.map(msg => `
     <div class="message-item">
-      <div class="message-meta">${new Date(msg.timestamp).toLocaleString('no-NO')}</div>
+      <div class="message-meta"><strong>${msg.name || 'Anonym'}</strong> • ${new Date(msg.timestamp).toLocaleString('no-NO')}</div>
       <div class="message-text">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
     </div>
   `).join('');
+});
+
+/* Sanntids lytter for delte specs */
+const specsQuery = query(specsCol, orderBy("timestamp", "desc"));
+onSnapshot(specsQuery, (snapshot) => {
+  const sharedSpecs = [];
+  snapshot.forEach(doc => {
+    sharedSpecs.push({ id: doc.id, ...doc.data() });
+  });
+  renderSharedSpecs(sharedSpecs);
 });
 
 /* Event Listeners */
@@ -114,17 +149,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const sendBtn = document.getElementById('send-btn');
   const inputEl = document.getElementById('message-input');
+  const nameEl = document.getElementById('name-input');
   const clearBtn = document.getElementById('clear-btn');
+  const shareSpecsBtn = document.getElementById('share-specs-btn');
 
-  // Send melding til Firestore
+  // Send melding til Firestore (med namn)
   if (sendBtn && inputEl) {
     sendBtn.addEventListener('click', async () => {
       const text = inputEl.value.trim();
-      if (!text) return alert('Vennligst skriv en melding');
+      const name = nameEl.value.trim();
+      
+      if (!text) return alert('Vennligst skriv ein melding');
+      if (!name) return alert('Vennligst skriv ditt namn');
 
       try {
         await addDoc(messagesCol, {
           text: text,
+          name: name,
           timestamp: new Date().toISOString()
         });
         inputEl.value = '';
@@ -138,10 +179,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Del dine specs
+  if (shareSpecsBtn) {
+    shareSpecsBtn.addEventListener('click', async () => {
+      const name = prompt('Kva skal dine specs heite? (f.eks. "Min MacBook")');
+      if (!name) return;
+
+      try {
+        await addDoc(specsCol, {
+          name: name.trim(),
+          specs: specs,
+          timestamp: new Date().toISOString()
+        });
+        alert('Specs delt! 🎉');
+      } catch (error) {
+        console.error("Feil ved deling av specs:", error);
+      }
+    });
+  }
+
   // Slett alle meldinger (fjerner alt globalt fra Firestore)
   if (clearBtn) {
     clearBtn.addEventListener('click', async () => {
-      if (confirm('Er du sikker på at du vil slette ALLE meldinger fra hele databasen?')) {
+      if (confirm('Er du sikker på at du vil slette ALLE meldingar frå heile databasen?')) {
         const querySnapshot = await getDocs(messagesCol);
         querySnapshot.forEach(async (documentDoc) => {
           await deleteDoc(doc(db, "messages", documentDoc.id));
